@@ -60,3 +60,9 @@ main.py 内で loop_watch を有効にする。
 - 抽選申込み機能の実装
 - ログイン処理の共通化
 - 曜日ごとのON/OFF設定
+- メモ（後で対応するとき用）
+原因: Python が LibreSSL 2.8.3 でビルドされていて、urllib3 v2 が OpenSSL 1.1.1+ を要求している
+将来やるなら:
+OpenSSL付きのPythonに入れ直す
+urllib3<2 に固定する
+
