@@ -1,10 +1,13 @@
 # shared/config/settings.py
 from pathlib import Path
+import os
 
 # ---- 動作設定 ----
 WEEKEND_ONLY = True          # 土日だけを見るなら True
 SEND_LINE = True             # LINE通知するなら True
 RESULT_URL = "https://kouen.sports.metro.tokyo.lg.jp/web/index.jsp"
+TOKYO_TENNIS_USER_ID = os.getenv("TOKYO_TENNIS_USER_ID", "")
+TOKYO_TENNIS_PASSWORD = os.getenv("TOKYO_TENNIS_PASSWORD", "")
 
 # ---- 障害・重複通知対策 ----
 ERROR_LIMIT = 5              # SITE_ERROR が連続何回で障害通知するか
@@ -18,3 +21,7 @@ MONTH_WAIT_TIMEOUT_MS = 60_000    # 月表示の最大待ち時間（最大1分�
 
 # ---- 監視ループ ----
 INTERVAL_MIN = 10                 # 監視間隔（分）
+
+
+TOP_MAX_REFRESH = 30   # 最大リロード回数
+TOP_WAIT_SEC = 20      # リロード間隔（秒）

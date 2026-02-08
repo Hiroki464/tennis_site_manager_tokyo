@@ -10,7 +10,7 @@ from shared.infra.browser import BrowserSession
 
 from apps.reserve_watch.config.courts_config import COURTS
 from apps.reserve_watch.pages.home_page import (
-    open_top_with_auto_refresh,
+    open_top,
     go_home,
     set_search_conditions,
     click_search,
@@ -44,7 +44,7 @@ def check_courts_months(headless: bool = True) -> str:
             page = bs.page
 
             # 最初のアクセス：直叩き＋20秒ごと自動リロード待ち
-            if not open_top_with_auto_refresh(page):
+            if not open_top(page):
                 print("⚠ トップページに到達できず → 障害扱い")
                 return "SITE_ERROR"
 
