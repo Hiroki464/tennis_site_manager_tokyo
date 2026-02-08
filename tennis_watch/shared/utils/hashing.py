@@ -1,12 +1,13 @@
 import hashlib
 from pathlib import Path
+from typing import Optional
 
 
 def calc_hash(text: str) -> str:
     return hashlib.md5(text.encode("utf-8")).hexdigest()
 
 
-def read_hash(path: Path) -> str | None:
+def read_hash(path: Path) -> Optional[str]:
     if not path.exists():
         return None
     try:

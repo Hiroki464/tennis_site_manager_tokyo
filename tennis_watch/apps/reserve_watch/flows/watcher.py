@@ -3,9 +3,10 @@ import time
 from shared.config import settings
 from shared.notify.line_notify import send_line_message
 from apps.reserve_watch.flows.checker import check_courts_months
+from typing import Optional
 
 
-def loop_watch(interval_min: int | None = None):
+def loop_watch(interval_min: Optional[int] = None):
     if interval_min is None:
         interval_min = settings.INTERVAL_MIN
 

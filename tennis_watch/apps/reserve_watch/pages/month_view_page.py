@@ -2,9 +2,11 @@
 import re
 from datetime import date
 from shared.config import settings
+from typing import Optional, Tuple
 
 
-def get_year_month_from_page(page) -> tuple[int | None, int | None]:
+
+def get_year_month_from_page(page) -> Tuple[Optional[int], Optional[int]]:
     txt = page.inner_text("body")
     m = re.search(r"(\d{4})年\s*(\d{1,2})月", txt)
     if not m:
