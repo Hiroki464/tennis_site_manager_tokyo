@@ -1,4 +1,4 @@
-# tennis_watch/apps/lottery/config/lottery_config.py
+# tennis_watch/shared/config/lottery_config.py
 from dataclasses import dataclass
 
 # 種別は完全一致
@@ -9,7 +9,7 @@ TENNIS_TURF = "テニス（人工芝）"
 @dataclass(frozen=True)
 class LotteryTarget:
     """
-    抽選の対象条件（まずは1件だけ）
+    抽選の1件分の条件。enabled=False のものは申し込まない。
     """
     enabled: bool
     category_label: str   # 「テニス（ハード）」or「テニス（人工芝）」完全一致
@@ -26,15 +26,12 @@ class LotteryConfig:
     usedate_timeout_ms: int = 60000
 
 
-# まずは1件だけでいい（複数候補はいらない）
-LOTTERY_TARGET = LotteryTarget(
-    enabled=True,
-    category_label=TENNIS_HARD,           # テニス（ハード） or テニス（人工芝）
-    park_label="大井ふ頭中央海浜公園Ｂ",      # 公園ラベル
-    facility_label=TENNIS_HARD,           # 施設ラベル（同じ表示名でも公園でvalueは変わるのでlabel指定）
-    ymd="20260326",                       # 日付
-    time="15:00",                         # 時間（7:00,9:00,11:00,13:00,15:00,17:00）
-    apply_slot=1,                         # 1=申込み1件目 / 2=申込み2件目
+# 1アカウントあたり最大4回：ハード1件目・2件目、人工芝1件目・2件目。enabled で申し込む/申し込まないを切り替え。
+LOTTERY_TARGETS = (
+    LotteryTarget(enabled=True, category_label=TENNIS_HARD, park_label="大井ふ頭中央海浜公園Ｂ", facility_label=TENNIS_HARD, ymd="20260326", time="13:00", apply_slot=1),  # 1回目: ハード, 申込1件目
+    LotteryTarget(enabled=False, category_label=TENNIS_HARD, park_label="大井ふ頭中央海浜公園Ｂ", facility_label=TENNIS_HARD, ymd="20260326", time="15:00", apply_slot=2),  # 2回目: ハード, 申込2件目
+    LotteryTarget(enabled=False, category_label=TENNIS_TURF, park_label="東大和南公園", facility_label=TENNIS_TURF, ymd="20260326", time="13:00", apply_slot=1),  # 3回目: 人工芝, 申込1件目
+    LotteryTarget(enabled=False, category_label=TENNIS_TURF, park_label="東大和南公園", facility_label=TENNIS_TURF, ymd="20260326", time="15:00", apply_slot=2),  # 4回目: 人工芝, 申込2件目
 )
 
 CONFIG = LotteryConfig()

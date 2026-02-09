@@ -27,7 +27,9 @@ class LogoutService:
 
         # 2) ログアウトを押す
         try:
-            page.get_by_role("link", name=re.compile("ログアウト")).click()
+            logout_link = page.get_by_role("link", name=re.compile("ログアウト"))
+            logout_link.wait_for(state="visible", timeout=1000)
+            logout_link.click()
         except Exception as e:
             print("⚠ ログアウトが押せない:", e)
             return False

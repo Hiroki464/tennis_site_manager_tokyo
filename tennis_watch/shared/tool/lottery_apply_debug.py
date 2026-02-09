@@ -8,60 +8,74 @@ from shared.infra.auth.logout_service import LogoutService
 
 from apps.lottery.pages.lottery_apply_list_page import LotteryApplyListPage
 from apps.lottery.pages.lottery_apply_page import LotteryApplyPage
-from shared.config.lottery_config import LOTTERY_TARGET, CONFIG
+from shared.config.lottery_config import LOTTERY_TARGETS, CONFIG
 from apps.lottery.pages.lottery_confirm_page import LotteryConfirmPage
+
+
+def _run_one_lottery(page, target, list_page, apply_page, confirm_page, cred_user_id: str) -> bool:
+    """1件分の抽選（一覧→日時選択→確認→送信）を実行。成功 True / 失敗 False。"""
+    if not list_page.goto_apply_list():
+        print(f"❌ 抽選申込み一覧へ行けない: {cred_user_id}")
+        return False
+    if not list_page.click_apply_for(target.category_label):
+        print(f"❌ 対象種別の申込みボタンが押せない [{target.category_label}]: {cred_user_id}")
+        return False
+    if not apply_page.select_park_and_facility(
+        park_label=target.park_label,
+        facility_label=target.facility_label,
+        timeout_ms=CONFIG.usedate_timeout_ms,
+    ):
+        print(f"❌ 公園・施設選択失敗: {cred_user_id}")
+        return False
+    if not apply_page.select_datetime_cell(
+        ymd=target.ymd,
+        time_str=target.time,
+        max_next_week=CONFIG.max_next_week,
+        timeout_ms=CONFIG.usedate_timeout_ms,
+    ):
+        print(f"❌ 日時セル選択失敗: {cred_user_id}")
+        return False
+    if not apply_page.click_apply():
+        print(f"❌ 申込みボタン押下失敗: {cred_user_id}")
+        return False
+    if not confirm_page.select_apply_slot(target.apply_slot):
+        print(f"❌ 申込み番号の選択に失敗: {cred_user_id}")
+        return False
+    if not confirm_page.submit():
+        print(f"❌ 申込み確定に失敗: {cred_user_id}")
+        return False
+    return True
 
 
 def _run_lottery_for_account(page, cred, login_svc) -> bool:
     """
-    1アカウント分の抽選フローを実行する。成功 True / 途中失敗 False。
+    1アカウント分の抽選フローを実行する（有効な LOTTERY_TARGETS を順に最大4回）。
+    1件でも成功すれば True、すべてスキップ or 最初の1件で失敗した場合は False。
     """
     if not login_svc.login(page, cred):
         print(f"❌ ログイン失敗: {cred.user_id}")
         return False
 
     list_page = LotteryApplyListPage(page)
-    if not list_page.goto_apply_list():
-        print(f"❌ 抽選申込み一覧へ行けない: {cred.user_id}")
-        return False
-
-    if not list_page.click_apply_for(LOTTERY_TARGET.category_label):
-        print(f"❌ 対象種別の申込みボタンが押せない: {cred.user_id}")
-        return False
-
     apply_page = LotteryApplyPage(page)
-    if not apply_page.select_park_and_facility(
-        park_label=LOTTERY_TARGET.park_label,
-        facility_label=LOTTERY_TARGET.facility_label,
-        timeout_ms=CONFIG.usedate_timeout_ms,
-    ):
-        print(f"❌ 公園・施設選択失敗: {cred.user_id}")
-        return False
-
-    if not apply_page.select_datetime_cell(
-        ymd=LOTTERY_TARGET.ymd,
-        time_str=LOTTERY_TARGET.time,
-        max_next_week=CONFIG.max_next_week,
-        timeout_ms=CONFIG.usedate_timeout_ms,
-    ):
-        print(f"❌ 日時セル選択失敗: {cred.user_id}")
-        return False
-
-    if not apply_page.click_apply():
-        print(f"❌ 申込みボタン押下失敗: {cred.user_id}")
-        return False
-
     confirm_page = LotteryConfirmPage(page)
-    if not confirm_page.select_apply_slot(LOTTERY_TARGET.apply_slot):
-        print(f"❌ 申込み番号の選択に失敗: {cred.user_id}")
+
+    enabled_targets = [t for t in LOTTERY_TARGETS if t.enabled]
+    if not enabled_targets:
+        print(f"⚠ 有効な抽選ターゲットが0件です: {cred.user_id}")
         return False
 
-    if not confirm_page.submit():
-        print(f"❌ 申込み確定に失敗: {cred.user_id}")
-        return False
+    success_count = 0
+    for i, target in enumerate(enabled_targets):
+        print(f"  申込 {i + 1}/{len(enabled_targets)}: {target.category_label} 申込{target.apply_slot}件目 ...")
+        if _run_one_lottery(page, target, list_page, apply_page, confirm_page, cred.user_id):
+            success_count += 1
+            print(f"  ✅ 完了: {target.category_label} 申込{target.apply_slot}件目")
+        else:
+            print(f"  ❌ 失敗: {target.category_label} 申込{target.apply_slot}件目（次のターゲットへ）")
 
-    print(f"✅ 抽選申込み完了: {cred.user_id}")
-    return True
+    print(f"✅ 抽選申込み 完了 {success_count}/{len(enabled_targets)} 件: {cred.user_id}")
+    return success_count > 0
 
 
 def run(headless: bool = False) -> None:
