@@ -8,6 +8,7 @@ from shared.infra.auth.login_service import LoginService
 from apps.lottery.pages.lottery_apply_list_page import LotteryApplyListPage
 from apps.lottery.pages.lottery_apply_page import LotteryApplyPage
 from shared.config.lottery_config import LOTTERY_TARGET, CONFIG
+from apps.lottery.pages.lottery_confirm_page import LotteryConfirmPage
 
 
 def run(headless: bool = False) -> None:
@@ -64,6 +65,18 @@ def run(headless: bool = False) -> None:
 
         if not apply_page.click_apply():
             print("❌ 申込みボタン押下失敗")
+            browser.close()
+            return
+
+        # 確認画面
+        confirm_page = LotteryConfirmPage(page)
+        if not confirm_page.select_apply_slot(LOTTERY_TARGET.apply_slot):
+            print("❌ 申込み番号の選択に失敗")
+            browser.close()
+            return
+
+        if not confirm_page.submit():
+            print("❌ 申込み確定に失敗")
             browser.close()
             return
 
