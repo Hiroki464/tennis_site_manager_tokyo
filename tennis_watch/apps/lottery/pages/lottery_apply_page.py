@@ -90,7 +90,7 @@ class LotteryApplyPage:
             # 施設の選択肢が更新され、目的のlabelが出るまで待つ
             self._wait_iname_has_label(facility_label, timeout_ms=timeout_ms)
             # TODO: waitを置かないと施設選択がクリアされてしまう現象がある
-            self.page.wait_for_timeout(1000)  # 1秒
+            self.page.wait_for_timeout(2000)  # 1秒
 
             # 施設選択
             self._facility_select().select_option(label=facility_label)

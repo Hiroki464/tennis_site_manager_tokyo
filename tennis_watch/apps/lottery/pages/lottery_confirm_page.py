@@ -36,9 +36,8 @@ class LotteryConfirmPage:
 
             value = self._slot_to_value(slot)
             self._apply_select().select_option(value=value)
-
-            # 反映待ち（念のため）
-            self.page.wait_for_timeout(200)
+            # TODO 反映待ち（念のため）
+            self.page.wait_for_timeout(2000)
             return True
         except Exception as e:
             print("⚠ 申込み番号の選択に失敗:", e)
