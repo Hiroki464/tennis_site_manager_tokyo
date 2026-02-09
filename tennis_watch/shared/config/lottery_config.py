@@ -34,7 +34,7 @@ LOTTERY_TARGET = LotteryTarget(
     facility_label=TENNIS_HARD,           # 施設ラベル（同じ表示名でも公園でvalueは変わるのでlabel指定）
     ymd="20260326",                       # 日付
     time="15:00",                         # 時間（7:00,9:00,11:00,13:00,15:00,17:00）
-    apply_slot=2,                         # 1=申込み1件目 / 2=申込み2件目
+    apply_slot=1,                         # 1=申込み1件目 / 2=申込み2件目
 )
 
 CONFIG = LotteryConfig()

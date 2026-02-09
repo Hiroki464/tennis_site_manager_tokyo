@@ -10,6 +10,9 @@ venv/
 # env (秘密)
 .env
 
+# 抽選複数アカウント（秘密）
+lottery_accounts.json
+
 # runtime files
 .last_notify_hash
 

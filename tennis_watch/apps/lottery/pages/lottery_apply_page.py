@@ -1,6 +1,7 @@
 # tennis_watch/apps/lottery/pages/lottery_apply_page.py
 
 import re
+import time
 from typing import Optional
 
 from playwright.sync_api import Page, Locator
@@ -15,6 +16,7 @@ class LotteryApplyPage:
 
     def __init__(self, page: Page):
         self.page = page
+        self._last_next_week_click_at = 0.0
 
     # -------------------------
     # 基本セレクタ
@@ -196,10 +198,19 @@ class LotteryApplyPage:
                 break
 
             # 翌週ボタン押下
+            now = time.monotonic()
+            min_interval_s = 0.8
+            elapsed_s = now - self._last_next_week_click_at
+            if elapsed_s < min_interval_s:
+                self.page.wait_for_timeout(int((min_interval_s - elapsed_s) * 1000))
             self._next_week_button().click()
-            # TODO: waitを置かないと翌週ボタンが2回以上押されてしまう現象がある
-            self.page.wait_for_timeout(1000)  # 1秒
+            self._last_next_week_click_at = time.monotonic()
             self.page.wait_for_load_state("networkidle")
+            try:
+                self._wait_usedate_table_loaded(timeout_ms=timeout_ms)
+            except Exception:
+                pass
+            self.page.wait_for_timeout(2000)  # TODO 週切り替え直後に日付を選ぶとズレることがあるため、表示の落ち着き待ち
 
         print("⚠ 指定の日時が見つからなかった:", ymd, time_str)
         return False

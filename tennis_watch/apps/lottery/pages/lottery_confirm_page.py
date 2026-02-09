@@ -52,6 +52,8 @@ class LotteryConfirmPage:
             self.page.once("dialog", lambda d: d.accept())
 
             self._apply_button().click()
+
+            self.page.wait_for_timeout(3000)  # TODO セッション切れを起こして登録できない事があるため、暫定対応でwaitを使用
             self.page.wait_for_load_state("networkidle")
             return True
         except Exception as e:
