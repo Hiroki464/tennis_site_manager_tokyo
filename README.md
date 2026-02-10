@@ -66,3 +66,4 @@ main.py 内で loop_watch を有効にする。
 OpenSSL付きのPythonに入れ直す
 urllib3<2 に固定する
 
+- ログアウトの直後に、一度無駄な更新処理が入っていること原因の特定

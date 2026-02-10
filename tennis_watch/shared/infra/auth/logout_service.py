@@ -30,6 +30,7 @@ class LogoutService:
             logout_link = page.get_by_role("link", name=re.compile("ログアウト"))
             logout_link.wait_for(state="visible", timeout=1000)
             logout_link.click()
+            page.wait_for_timeout(2000)  # TODO ログアウトボタンが押せないことがあるため、暫定対応でwaitを使用
         except Exception as e:
             print("⚠ ログアウトが押せない:", e)
             return False
