@@ -12,20 +12,25 @@ from shared.config.lottery_config import LOTTERY_TARGETS, CONFIG
 from apps.lottery.pages.lottery_confirm_page import LotteryConfirmPage
 
 
-def _run_one_lottery(page, target, list_page, apply_page, confirm_page, cred_user_id: str) -> bool:
+def _account_label(cred) -> str:
+    """ログ表示用のアカウント名（display_name があれば優先）"""
+    return cred.display_name or cred.user_id
+
+
+def _run_one_lottery(page, target, list_page, apply_page, confirm_page, cred_label: str) -> bool:
     """1件分の抽選（一覧→日時選択→確認→送信）を実行。成功 True / 失敗 False。"""
     if not list_page.goto_apply_list():
-        print(f"❌ 抽選申込み一覧へ行けない: {cred_user_id}")
+        print(f"❌ 抽選申込み一覧へ行けない: {cred_label}")
         return False
     if not list_page.click_apply_for(target.category_label):
-        print(f"❌ 対象種別の申込みボタンが押せない [{target.category_label}]: {cred_user_id}")
+        print(f"❌ 対象種別の申込みボタンが押せない [{target.category_label}]: {cred_label}")
         return False
     if not apply_page.select_park_and_facility(
         park_label=target.park_label,
         facility_label=target.facility_label,
         timeout_ms=CONFIG.usedate_timeout_ms,
     ):
-        print(f"❌ 公園・施設選択失敗: {cred_user_id}")
+        print(f"❌ 公園・施設選択失敗: {cred_label}")
         return False
     if not apply_page.select_datetime_cell(
         ymd=target.ymd,
@@ -33,16 +38,16 @@ def _run_one_lottery(page, target, list_page, apply_page, confirm_page, cred_use
         max_next_week=CONFIG.max_next_week,
         timeout_ms=CONFIG.usedate_timeout_ms,
     ):
-        print(f"❌ 日時セル選択失敗: {cred_user_id}")
+        print(f"❌ 日時セル選択失敗: {cred_label}")
         return False
     if not apply_page.click_apply():
-        print(f"❌ 申込みボタン押下失敗: {cred_user_id}")
+        print(f"❌ 申込みボタン押下失敗: {cred_label}")
         return False
     if not confirm_page.select_apply_slot(target.apply_slot):
-        print(f"❌ 申込み番号の選択に失敗: {cred_user_id}")
+        print(f"❌ 申込み番号の選択に失敗: {cred_label}")
         return False
     if not confirm_page.submit():
-        print(f"❌ 申込み確定に失敗: {cred_user_id}")
+        print(f"❌ 申込み確定に失敗: {cred_label}")
         return False
     return True
 
@@ -52,8 +57,10 @@ def _run_lottery_for_account(page, cred, login_svc) -> bool:
     1アカウント分の抽選フローを実行する（有効な LOTTERY_TARGETS を順に最大4回）。
     1件でも成功すれば True、すべてスキップ or 最初の1件で失敗した場合は False。
     """
+    label = _account_label(cred)
+
     if not login_svc.login(page, cred):
-        print(f"❌ ログイン失敗: {cred.user_id}")
+        print(f"❌ ログイン失敗: {label}")
         return False
 
     list_page = LotteryApplyListPage(page)
@@ -62,19 +69,19 @@ def _run_lottery_for_account(page, cred, login_svc) -> bool:
 
     enabled_targets = [t for t in LOTTERY_TARGETS if t.enabled]
     if not enabled_targets:
-        print(f"⚠ 有効な抽選ターゲットが0件です: {cred.user_id}")
+        print(f"⚠ 有効な抽選ターゲットが0件です: {label}")
         return False
 
     success_count = 0
     for i, target in enumerate(enabled_targets):
-        print(f"  申込 {i + 1}/{len(enabled_targets)}: {target.category_label} 申込{target.apply_slot}件目 ...")
-        if _run_one_lottery(page, target, list_page, apply_page, confirm_page, cred.user_id):
+        print(f"  申込 {i + 1}/{len(enabled_targets)}: {target.category_label} 申込{target.apply_slot}件目 ... [{label}]")
+        if _run_one_lottery(page, target, list_page, apply_page, confirm_page, label):
             success_count += 1
-            print(f"  ✅ 完了: {target.category_label} 申込{target.apply_slot}件目")
+            print(f"  ✅ 完了: {target.category_label} 申込{target.apply_slot}件目 [{label}]")
         else:
-            print(f"  ❌ 失敗: {target.category_label} 申込{target.apply_slot}件目（次のターゲットへ）")
+            print(f"  ❌ 失敗: {target.category_label} 申込{target.apply_slot}件目（次のターゲットへ） [{label}]")
 
-    print(f"✅ 抽選申込み 完了 {success_count}/{len(enabled_targets)} 件: {cred.user_id}")
+    print(f"✅ 抽選申込み 完了 {success_count}/{len(enabled_targets)} 件: {label}")
     return success_count > 0
 
 
@@ -99,7 +106,8 @@ def run(headless: bool = False) -> None:
         page = browser.new_page()
 
         for idx, cred in enumerate(credentials_list):
-            print(f"\n--- アカウント {idx + 1}/{len(credentials_list)}: {cred.user_id} ---")
+            label = _account_label(cred)
+            print(f"\n--- アカウント {idx + 1}/{len(credentials_list)}: {label} ---")
             ok = _run_lottery_for_account(page, cred, login_svc)
             if not ok:
                 # 次のアカウントへ（トップに戻すためログアウト試行）
@@ -109,7 +117,7 @@ def run(headless: bool = False) -> None:
             # 次のアカウントがいる場合はログアウトしてから次へ
             if idx + 1 < len(credentials_list):
                 if not logout_svc.logout(page):
-                    print(f"⚠ ログアウトに失敗しましたが次のアカウントを試行します: {cred.user_id}")
+                    print(f"⚠ ログアウトに失敗しましたが次のアカウントを試行します: {label}")
 
         print("\n✅ 全アカウントの処理が終わりました")
         input("Enter を押すとブラウザを閉じます")
